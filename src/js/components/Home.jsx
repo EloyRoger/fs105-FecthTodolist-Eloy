@@ -1,84 +1,95 @@
-import { useState, useEffect } from 'react';
-import '../../styles/index.css';
-
-function Home() {
-  const [todos, setTodos] = useState([]);
-  const [newTask, setNewTask] = useState('');
-  const apiUrl = 'https://playground.4geeks.com/todo/todos/miusuario';
-
-
-  useEffect(() => {
-    fetch(apiUrl)
-      .then(response => {
-        if (response.ok) return response.json();
-        if (response.status === 404) createUser();
-      })
-      .then(data => data && setTodos(data))
-      .catch(error => console.error('Error:', error));
-  }, []);
-
-  
-  const createUser = () => {
-    fetch(apiUrl, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify([])
+import React, {useEffect, useState} from "react";
+//create your first component
+const Home = () => {
+	const [state, setState] = useState({name: "", todos: []});
+  const [newTodo, setNewTodo] = useState("");
+	const getTodos = async () => {
+		try{
+		const response = await fetch('https://playground.4geeks.com/todo/users/eloy');
+		const data = await response.json();
+		console.log(data);
+			setState(data)
+		}catch(err){
+			console.log(err)
+		}
+	}
+  const createTodo = async () => {
+  try {
+    const response = await fetch("https://playground.4geeks.com/todo/todos/eloy", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        {
+        label: newTodo,
+        }),
     });
+    console.log(response);
+    if(response.status === 201){
+      setNewTodo("");
+      getTodos();
+    }
+  } catch (err) {
+    console.error("Error al hacer POST:", err);
+  }
+};
+  const deleteTodo = async (todoId) => {
+    try {
+      const response = await fetch (`https://playground.4geeks.com/todo/todos/${todoId}`, {
+        method: "DELETE"
+      });
+    if(response.status === 204){
+      getTodos();
+    }
+    } catch (err) {
+    }
   };
-
-
-  const updateApi = (updatedTasks) => {
-    fetch(apiUrl, {
-      method: 'PUT',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(updatedTasks)
-    });
-  };
-
- 
-  const handleAdd = (e) => {
-    e.preventDefault();
-    if (!newTask.trim()) return;
-    
-    const updatedTasks = [...todos, { label: newTask, done: false }];
-    setTodos(updatedTasks);
-    updateApi(updatedTasks);
-    setNewTask('');
-  };
-
-
-  const handleDelete = (index) => {
-    const updatedTasks = todos.filter((_, i) => i !== index);
-    setTodos(updatedTasks);
-    updateApi(updatedTasks);
-  };
-
-  return (
-    <div className="app">
-      <h1>Lista de Tareas</h1>
-      
-      <form onSubmit={handleAdd}>
-        <input
-          type="text"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
-          placeholder="Escribe una tarea..."
-        />
-        <button>Agregar</button>
-      </form>
-
-      <div className="task-list">
-        {todos.map((task, index) => (
-          <div key={index} className="task-item">
-            <p>{task.label}</p>
-            <button onClick={() => handleDelete(index)}>X</button>
-          </div>
-        ))}
-      </div>
-
-      <p>Total tareas: {todos.length}</p>
-    </div>
-  );
+const deleteAll = async () => {
+try {
+  for (const todo of state.todos) {
+  const response = await fetch(`https://playground.4geeks.com/todo/todos/${todo.id}`, {
+    method: "DELETE"
+  });
 }
-
+getTodos();
+} catch (err) {
+ console.log(err)
+}
+};
+	useEffect(()=>{
+		getTodos()
+	},[]);
+	return (
+    <div className="list">
+      <div>
+        <h1>LISTA</h1>
+            <form>
+								<input
+                  className="input-styles"
+                  type="text"
+                  placeholder="Escribe una tarea..."
+                  value={newTodo}
+                  onChange={(e) => setNewTodo(e.target.value)}
+                />
+						</form>
+          <div className="buttons-top">
+            <button
+              className="btnAdd"
+              onClick={createTodo}>agregar</button>
+            <button
+              className="btnDelete"
+              onClick={deleteAll}>eliminar</button>
+          </div>
+      </div>
+         	  {state.todos.map((todo)=>
+              <p key={todo.id}>
+                {todo.label}
+                <button
+                  className="button-bot"
+                  onClick={() => deleteTodo(todo.id)}> X
+                </button>
+              </p>
+        	  )}
+        </div>
+	);
+};
 export default Home;
